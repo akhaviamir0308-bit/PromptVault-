@@ -949,7 +949,7 @@ body.compact .scard-top .cmd{font-size:12px}
     <h3>حریم خصوصی</h3>
     <p>بدون حساب کاربری. پشتیبان و کد اشتراک فقط در اختیار خودتان است.</p>
     <div class="about-meta">
-      <div class="about-visits" id="aboutVisitCount">بازدید کل: در حال دریافت…</div>
+      <div class="about-visits" id="aboutVisitCount">بازدید کل سایت: در حال دریافت…</div>
       نسخه رابط: v1.8+ (فازهای بهبود UX / پرامپت / فضای کار)<br>
       مدل: Persian-first · نام شورتکات انگلیسی · Local-first
     </div>
@@ -3210,77 +3210,86 @@ if($("variantNoiseBtn")) $("variantNoiseBtn").classList.toggle("primary", !!stat
 })();
 
 
-// Visit counter — shown in About; best-effort public APIs + local fallback
+// Global site visit counter (About section only) — NOT local browser visits
 (function(){
-  const CACHE_KEY = "pcs_v3_visit_total";
-  const LOCAL_KEY = "pcs_v3_visit_local";
+  const CACHE_KEY = "pcs_v3_global_visits";
   const formatFa = (n) => { try { return Number(n).toLocaleString("fa-IR"); } catch(e){ return String(n); } };
 
   function renderVisit(total, note){
     const el = document.getElementById("aboutVisitCount");
     if(!el) return;
-    if(total != null && total !== ""){
-      el.innerHTML = "بازدید کل (تقریبی): <b>" + formatFa(total) + "</b>" +
+    if(total != null && total !== "" && !isNaN(Number(total))){
+      el.innerHTML = "بازدید کل سایت (تقریبی): <b>" + formatFa(total) + "</b>" +
         (note ? ' <span class="muted">(' + note + ")</span>" : "");
     } else {
-      el.innerHTML = 'بازدید کل: <span class="muted">فعلاً در دسترس نیست</span>';
+      el.innerHTML = 'بازدید کل سایت: <span class="muted">شمارنده سراسری فعلاً در دسترس نیست</span>';
     }
   }
 
-  // local browser visits (always works)
-  let local = 0;
-  try {
-    local = parseInt(localStorage.getItem(LOCAL_KEY) || "0", 10) || 0;
-    local += 1;
-    localStorage.setItem(LOCAL_KEY, String(local));
-  } catch(e){}
+  function saveCache(v){
+    try { localStorage.setItem(CACHE_KEY, String(v)); } catch(e){}
+  }
 
-  function tryCountApi(){
-    // countapi.xyz
-    return fetch("https://api.countapi.xyz/hit/promptvault-akhaviamir/site", { mode:"cors", cache:"no-store" })
-      .then(r => r.ok ? r.json() : Promise.reject())
+  // 1) Abacus (public global counter, CORS-friendly)
+  function hitAbacus(){
+    return fetch("https://abacus.jasoncameron.dev/hit/promptvault-akhaviamir/site", {
+      mode: "cors", cache: "no-store"
+    }).then(r => r.ok ? r.json() : Promise.reject(new Error("abacus")))
       .then(d => {
         const v = d && (d.value != null ? d.value : d.count);
-        if(v == null) throw new Error("no value");
-        try { localStorage.setItem(CACHE_KEY, String(v)); } catch(e){}
-        return v;
-      });
-  }
-  function tryCounterApiDev(){
-    return fetch("https://api.counterapi.dev/v1/promptvault/akhaviamir/up", { mode:"cors", cache:"no-store" })
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(d => {
-        const v = d && (d.count != null ? d.count : (d.value != null ? d.value : null));
-        if(v == null) throw new Error("no value");
-        try { localStorage.setItem(CACHE_KEY, String(v)); } catch(e){}
-        return v;
+        if(v == null) throw new Error("abacus empty");
+        saveCache(v);
+        return Number(v);
       });
   }
 
-  function showCachedOrLocal(){
+  // 2) countapi.xyz
+  function hitCountApi(){
+    return fetch("https://api.countapi.xyz/hit/promptvault-akhaviamir/site", {
+      mode: "cors", cache: "no-store"
+    }).then(r => r.ok ? r.json() : Promise.reject(new Error("countapi")))
+      .then(d => {
+        const v = d && (d.value != null ? d.value : d.count);
+        if(v == null) throw new Error("countapi empty");
+        saveCache(v);
+        return Number(v);
+      });
+  }
+
+  // 3) counterapi.dev
+  function hitCounterApiDev(){
+    return fetch("https://api.counterapi.dev/v1/promptvault/akhaviamir/up", {
+      mode: "cors", cache: "no-store"
+    }).then(r => r.ok ? r.json() : Promise.reject(new Error("counterapi")))
+      .then(d => {
+        const v = d && (d.count != null ? d.count : d.value);
+        if(v == null) throw new Error("counterapi empty");
+        saveCache(v);
+        return Number(v);
+      });
+  }
+
+  function showCacheOnly(){
     try {
       const cached = localStorage.getItem(CACHE_KEY);
-      if(cached){ renderVisit(cached, "آخرین مقدار ذخیره‌شده"); return; }
-    } catch(e){}
-    renderVisit(local, "فقط این مرورگر");
+      if(cached) renderVisit(cached, "آخرین مقدار سراسری ذخیره‌شده — اتصال جدید برقرار نشد");
+      else renderVisit(null);
+    } catch(e){ renderVisit(null); }
   }
 
-  tryCountApi()
-    .catch(() => tryCounterApiDev())
+  // Try global services in order (each successful hit increments the shared counter)
+  hitAbacus()
+    .catch(() => hitCountApi())
+    .catch(() => hitCounterApiDev())
     .then(v => renderVisit(v, null))
-    .catch(() => showCachedOrLocal());
+    .catch(() => showCacheOnly());
 
-  // refresh label when About opens
   const aboutBtn = document.getElementById("aboutBtn");
   if(aboutBtn){
     aboutBtn.addEventListener("click", () => {
-      const el = document.getElementById("aboutVisitCount");
-      if(!el) return;
       try {
         const cached = localStorage.getItem(CACHE_KEY);
         if(cached) renderVisit(cached, null);
-        else if(!el.textContent || el.textContent.indexOf("…") >= 0 || el.textContent.indexOf("دریافت") >= 0)
-          showCachedOrLocal();
       } catch(e){}
     });
   }
