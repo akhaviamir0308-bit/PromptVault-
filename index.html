@@ -718,14 +718,11 @@ body.compact .scard-top .cmd{font-size:12px}
 }
 
 
-.visit-count{
-  font-size:10px;color:var(--muted);margin-top:2px;opacity:.85;
+.about-visits{
+  font-size:13px;color:var(--text);margin-bottom:8px;font-weight:600;
   font-variant-numeric:tabular-nums;
 }
-@media (max-width:860px){
-  .visit-count{font-size:9px}
-  .brand .sub{font-size:10px}
-}
+.about-visits .muted{font-weight:500;color:var(--muted);font-size:11px}
 
 </style>
 </head>
@@ -737,7 +734,6 @@ body.compact .scard-top .cmd{font-size:12px}
       <div>
         <h1>PromptVault</h1>
         <div class="sub">کتابخانهٔ شورتکات تصویر · v1.8</div>
-        <div class="visit-count" id="visitCount" title="بازدید تقریبی (شمارنده عمومی)">بازدید: …</div>
       </div>
     </div>
     <div class="top-actions">
@@ -953,6 +949,7 @@ body.compact .scard-top .cmd{font-size:12px}
     <h3>حریم خصوصی</h3>
     <p>بدون حساب کاربری. پشتیبان و کد اشتراک فقط در اختیار خودتان است.</p>
     <div class="about-meta">
+      <div class="about-visits" id="aboutVisitCount">بازدید کل: در حال دریافت…</div>
       نسخه رابط: v1.8+ (فازهای بهبود UX / پرامپت / فضای کار)<br>
       مدل: Persian-first · نام شورتکات انگلیسی · Local-first
     </div>
@@ -3213,31 +3210,80 @@ if($("variantNoiseBtn")) $("variantNoiseBtn").classList.toggle("primary", !!stat
 })();
 
 
-// Public visit counter (best-effort; fails silently offline)
-(function loadVisitCount(){
-  const el = document.getElementById("visitCount");
-  if(!el) return;
-  const KEY = "promptvault_gh_visits_v1";
-  const endpoint = "https://api.countapi.xyz/hit/akhaviamir0308-bit.github.io/PromptVault-";
-  const formatFa = (n) => {
-    try { return Number(n).toLocaleString("fa-IR"); } catch(e){ return String(n); }
-  };
-  fetch(endpoint, { mode: "cors", cache: "no-store" })
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(d => {
-      const v = (d && (d.value != null ? d.value : d.count));
-      if(v != null){
-        el.textContent = "بازدید: " + formatFa(v);
-        try { localStorage.setItem(KEY, String(v)); } catch(e){}
-      }
-    })
-    .catch(() => {
+// Visit counter — shown in About; best-effort public APIs + local fallback
+(function(){
+  const CACHE_KEY = "pcs_v3_visit_total";
+  const LOCAL_KEY = "pcs_v3_visit_local";
+  const formatFa = (n) => { try { return Number(n).toLocaleString("fa-IR"); } catch(e){ return String(n); } };
+
+  function renderVisit(total, note){
+    const el = document.getElementById("aboutVisitCount");
+    if(!el) return;
+    if(total != null && total !== ""){
+      el.innerHTML = "بازدید کل (تقریبی): <b>" + formatFa(total) + "</b>" +
+        (note ? ' <span class="muted">(' + note + ")</span>" : "");
+    } else {
+      el.innerHTML = 'بازدید کل: <span class="muted">فعلاً در دسترس نیست</span>';
+    }
+  }
+
+  // local browser visits (always works)
+  let local = 0;
+  try {
+    local = parseInt(localStorage.getItem(LOCAL_KEY) || "0", 10) || 0;
+    local += 1;
+    localStorage.setItem(LOCAL_KEY, String(local));
+  } catch(e){}
+
+  function tryCountApi(){
+    // countapi.xyz
+    return fetch("https://api.countapi.xyz/hit/promptvault-akhaviamir/site", { mode:"cors", cache:"no-store" })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => {
+        const v = d && (d.value != null ? d.value : d.count);
+        if(v == null) throw new Error("no value");
+        try { localStorage.setItem(CACHE_KEY, String(v)); } catch(e){}
+        return v;
+      });
+  }
+  function tryCounterApiDev(){
+    return fetch("https://api.counterapi.dev/v1/promptvault/akhaviamir/up", { mode:"cors", cache:"no-store" })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => {
+        const v = d && (d.count != null ? d.count : (d.value != null ? d.value : null));
+        if(v == null) throw new Error("no value");
+        try { localStorage.setItem(CACHE_KEY, String(v)); } catch(e){}
+        return v;
+      });
+  }
+
+  function showCachedOrLocal(){
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if(cached){ renderVisit(cached, "آخرین مقدار ذخیره‌شده"); return; }
+    } catch(e){}
+    renderVisit(local, "فقط این مرورگر");
+  }
+
+  tryCountApi()
+    .catch(() => tryCounterApiDev())
+    .then(v => renderVisit(v, null))
+    .catch(() => showCachedOrLocal());
+
+  // refresh label when About opens
+  const aboutBtn = document.getElementById("aboutBtn");
+  if(aboutBtn){
+    aboutBtn.addEventListener("click", () => {
+      const el = document.getElementById("aboutVisitCount");
+      if(!el) return;
       try {
-        const cached = localStorage.getItem(KEY);
-        if(cached) el.textContent = "بازدید: " + formatFa(cached) + " (ذخیره‌شده)";
-        else el.textContent = "";
-      } catch(e){ el.textContent = ""; }
+        const cached = localStorage.getItem(CACHE_KEY);
+        if(cached) renderVisit(cached, null);
+        else if(!el.textContent || el.textContent.indexOf("…") >= 0 || el.textContent.indexOf("دریافت") >= 0)
+          showCachedOrLocal();
+      } catch(e){}
     });
+  }
 })();
 
 try {
