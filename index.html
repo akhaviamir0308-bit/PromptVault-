@@ -445,7 +445,8 @@ body.light .scard.selected::after{background:rgba(79,95,255,.12)}
   .brand .sub{display:none}
   .brand h1{font-size:13px}
   .logo{width:32px;height:32px;border-radius:9px;font-size:15px}
-  .top-actions .btn:not(.nav-toggle):not(#themeBtn):not(#aboutBtn){display:none}
+  .top-actions .btn:not(.nav-toggle):not(#themeBtn):not(#aboutBtn):not(#moreToolsBtn){display:none}
+  .more-wrap{display:inline-block}
   .nav-toggle{display:inline-flex !important;min-height:40px;padding:8px 12px}
 
   .main{
@@ -657,6 +658,75 @@ body.compact .scard-top .cmd{font-size:12px}
   .m-prompt-panel .row .btn{flex:1 1 auto}
 }
 
+
+/* UX cleanup: top more-menu + collapsible filters */
+.more-wrap{position:relative;z-index:50}
+.more-panel{
+  position:absolute;top:calc(100% + 6px);left:0;z-index:60;
+  min-width:220px;padding:6px;border-radius:12px;
+  background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:2px;
+  max-height:min(70vh, 420px);overflow-y:auto;
+}
+.more-panel[hidden]{display:none !important}
+.more-item{
+  text-align:right;padding:9px 12px;border-radius:8px;font-size:12px;
+  color:var(--text);background:transparent;border:none;cursor:pointer;
+  width:100%;
+}
+.more-item:hover{background:var(--panel2)}
+.more-backdrop{
+  display:none;position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.45);
+}
+.more-backdrop.show{display:block}
+@media (max-width:860px){
+  .more-wrap{position:static}
+  .more-panel{
+    position:fixed !important;
+    left:12px !important;right:12px !important;top:auto !important;
+    bottom:72px !important; /* above mobile bottom nav */
+    width:auto !important;min-width:0;
+    max-height:60vh;
+    z-index:70 !important;
+    border-radius:16px;
+    padding:10px 8px;
+  }
+  .more-item{padding:12px 14px;font-size:13px;min-height:44px}
+}
+.filter-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px}
+.filter-row .quick-chips{margin:0;flex:1}
+.filters-panel{
+  margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);
+}
+.filters-panel[hidden]{display:none !important}
+.filter-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag-chips{margin-top:0}
+.search-hist{margin-top:8px}
+.lib-meta{margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+@media (max-width:860px){
+  .top-actions{gap:4px}
+  .top-actions .btn{padding:7px 10px;font-size:12px}
+  /* more-panel mobile handled above */
+  .quick-chips{gap:5px}
+  .qchip{padding:6px 10px;font-size:11px}
+  .filter-row{margin-top:6px}
+  .lib-toolbar{padding:10px 10px 8px}
+  .search-wrap input{font-size:14px}
+  /* reduce visual noise on cards mobile */
+  .scard-foot .tag{max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .scard .meaning{-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+}
+
+
+.visit-count{
+  font-size:10px;color:var(--muted);margin-top:2px;opacity:.85;
+  font-variant-numeric:tabular-nums;
+}
+@media (max-width:860px){
+  .visit-count{font-size:9px}
+  .brand .sub{font-size:10px}
+}
+
 </style>
 </head>
 <body>
@@ -667,19 +737,28 @@ body.compact .scard-top .cmd{font-size:12px}
       <div>
         <h1>PromptVault</h1>
         <div class="sub">کتابخانهٔ شورتکات تصویر · v1.8</div>
+        <div class="visit-count" id="visitCount" title="بازدید تقریبی (شمارنده عمومی)">بازدید: …</div>
       </div>
     </div>
     <div class="top-actions">
       <button class="btn nav-toggle" id="navToggle" type="button" aria-label="باز کردن منو">منو</button>
-      <button class="btn" id="aboutBtn" title="درباره سایت">درباره</button>
-      <button class="btn" id="guideBtn">راهنمای انتخاب</button>
-      <button class="btn" id="compareBtn" title="۲ یا ۳ شورتکات را با Shift+کلیک انتخاب کنید">مقایسه</button>
-      <button class="btn" id="saveBtn" title="فایل متنی خوانا از انتخاب‌ها و پرامپت">خروجی متنی</button>
-      <button class="btn" id="shareSelBtn" title="کپی کد اشتراک انتخاب‌ها">اشتراک انتخاب</button>
-      <button class="btn" id="importSelBtn" title="ورود از کد اشتراک">ورود کد</button>
-      <button class="btn" id="exportWsBtn" title="پشتیبان کامل برای بازیابی بعدی">پشتیبان کار</button>
-      <button class="btn" id="importWsBtn" title="فقط فایل پشتیبان معتبر">بازیابی پشتیبان</button>
       <button class="btn" id="themeBtn">حالت روشن</button>
+      <button class="btn" id="aboutBtn" title="درباره سایت">درباره</button>
+      <div class="more-wrap">
+        <button class="btn" id="moreToolsBtn" type="button" aria-expanded="false" aria-haspopup="true">بیشتر ▾</button>
+        <div class="more-backdrop" id="moreBackdrop" aria-hidden="true"></div>
+        <div class="more-panel" id="moreToolsPanel" hidden>
+          <button type="button" class="more-item" id="guideBtn">راهنمای انتخاب</button>
+          <button type="button" class="more-item" id="compareBtn">مقایسه (Shift+کلیک)</button>
+          <button type="button" class="more-item" id="saveBtn">خروجی متنی</button>
+          <button type="button" class="more-item" id="shareSelBtn">اشتراک انتخاب (کد)</button>
+          <button type="button" class="more-item" id="importSelBtn">ورود کد اشتراک</button>
+          <button type="button" class="more-item" id="exportWsBtn">پشتیبان کار</button>
+          <button type="button" class="more-item" id="importWsBtn">بازیابی پشتیبان</button>
+          <button type="button" class="more-item" id="compactBtn">چگالی فشرده کارت‌ها</button>
+          <button type="button" class="more-item" id="variantNoiseBtn">تمیزسازی لیست (HD/PREM)</button>
+        </div>
+      </div>
       <input id="wsFileInput" type="file" accept=".txt,.json,text/plain" hidden>
     </div>
   </header>
@@ -693,26 +772,27 @@ body.compact .scard-top .cmd{font-size:12px}
       <div class="lib-toolbar">
         <div class="search-wrap">
           <span class="ico">⌕</span>
-          <input id="search" type="search" placeholder="جستجو — فارسی یا انگلیسی؛ مثلاً پوست طبیعی یا cinematic…" autocomplete="off">
+          <input id="search" type="search" placeholder="جستجو فارسی یا انگلیسی…" autocomplete="off">
         </div>
-        <div class="quick-chips" id="quickChips">
-          <button class="qchip" data-q="cinematic">Cinematic</button>
-          <button class="qchip" data-q="portrait">Portrait</button>
-          <button class="qchip" data-q="lighting">Lighting</button>
-          <button class="qchip" data-q="realism">Realism</button>
-          <button class="qchip" data-q="fashion">Fashion</button>
-          <button class="qchip" data-q="product">Product</button>
+        <div class="filter-row">
+          <div class="quick-chips" id="quickChips">
+            <button class="qchip" data-q="cinematic">Cinematic</button>
+            <button class="qchip" data-q="portrait">Portrait</button>
+            <button class="qchip" data-q="lighting">Lighting</button>
+            <button class="qchip" data-q="product">Product</button>
+          </div>
+          <button type="button" class="btn sm" id="filtersToggleBtn" aria-expanded="false">فیلترها ▾</button>
         </div>
-        <div class="tag-chips" id="tagChips" aria-label="فیلتر تگ"></div>
-        <div class="search-hist" id="searchHist" aria-label="تاریخچه جستجو"></div>
+        <div class="filters-panel" id="filtersPanel" hidden>
+          <div class="tag-chips" id="tagChips" aria-label="فیلتر تگ"></div>
+          <div class="search-hist" id="searchHist" aria-label="تاریخچه جستجو"></div>
+          <div class="filter-actions">
+            <button class="btn sm filter-curated" id="curatedOnlyBtn">★ منتخب‌ها</button>
+            <button class="btn sm" id="favOnlyBtn">★ علاقه‌مندی‌ها</button>
+          </div>
+        </div>
         <div class="lib-meta">
           <span id="resultInfo">—</span>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn sm filter-curated" id="curatedOnlyBtn">★ فقط منتخب‌ها</button>
-            <button class="btn sm" id="favOnlyBtn">★ فقط علاقه‌مندی‌ها</button>
-            <button class="btn sm" id="compactBtn" title="حالت فشرده کارت‌ها">چگالی فشرده</button>
-            <button class="btn sm" id="variantNoiseBtn" title="مخفی کردن نسخه‌های HD/PREM تکراری‌نما">تمیزسازی لیست</button>
-          </div>
         </div>
       </div>
       <div class="lib-scroll">
@@ -846,38 +926,35 @@ body.compact .scard-top .cmd{font-size:12px}
       <h2 id="aboutTitle">درباره PromptVault</h2>
       <button type="button" class="btn sm" id="aboutClose">بستن</button>
     </div>
-    <h3>این سایت چیست؟</h3>
-    <p>کتابخانه و استودیوی انتخاب <b style="color:var(--text)">شورتکات تصویر</b> برای کمک به ساخت متن پرامپت ساده و عمومی. تمرکز روی کشف، فهمیدن و ترکیب دستورهاست — نه موتور لایه‌ای حرفه‌ای پرامپت.</p>
+        <h3>این سایت چیست؟</h3>
+    <p><b style="color:var(--text)">PromptVault</b> کتابخانهٔ فارسی‌محور شورتکات تولید تصویر با هوش مصنوعی است. هدفش پیدا کردن سریع دستور درست و ساخت یک پرامپت متنی ساده است — نه تولید تصویر و نه موتور حرفه‌ای Prompt Engineering.</p>
     <h3>این سایت چه چیزی نیست؟</h3>
     <ul>
-      <li>تولیدکننده تصویر نیست؛ عکس را خودش نمی‌سازد</li>
-      <li>چت‌بات یا دستیار گفت‌وگو نیست</li>
-      <li>جایگزین رسمی سرویس‌هایی مثل Midjourney، Adobe Firefly یا Stable Diffusion نیست</li>
-      <li>قرار نیست همه تصمیم‌های پرامپت‌نویسی را به‌جای شما خودکار بگیرد</li>
+      <li>تولیدکننده تصویر نیست</li>
+      <li>چت‌بات نیست</li>
+      <li>جایگزین رسمی Midjourney / SDXL / FLUX نیست</li>
+      <li>ادعا نمی‌کند «بهترین پرامپت دنیا» را دارد</li>
     </ul>
-    <h3>ساخت و وضعیت به‌روزرسانی</h3>
-    <p>این رابط و منطق فعلی با کمک هوش مصنوعی و در تعامل انسان–AI از پایه ساخته و تکمیل شده است. در حال حاضر برنامهٔ اعلام‌شده‌ای برای انتشار قابلیت‌های جدید عمده وجود ندارد؛ نسخهٔ جاری همان است که در این صفحه می‌بینید. در صورت نیاز، اصلاحات جزئی یا امنیتی ممکن است جداگانه انجام شود.</p>
-    <h3>چطور کار می‌کند؟</h3>
+    <h3>قابلیت‌های فعلی (خلاصه)</h3>
     <ul>
-      <li>جستجو یا مرور از سایدبار، منتخب‌ها، سبک‌ها و ترکیب‌های آماده</li>
-      <li>مشاهده توضیح فارسی در Inspector</li>
-      <li>افزودن به انتخاب‌ها، مجموعه یا مقایسه</li>
-      <li>ساخت یا کپی پرامپت از روی انتخاب‌ها</li>
+      <li>بیش از ۲۲۰۰ شورتکات با توضیح فارسی + جستجو و فیلتر</li>
+      <li>منتخب‌ها، سبک‌ها، ترکیب آماده و <b>مسیر کار</b> مرحله‌ای</li>
+      <li>ساخت پرامپت ساختاریافته: موضوع/سبک → نور و دوربین → جزئیات</li>
+      <li>هشدار تداخل انتخاب‌ها + پیشنهاد نگه/حذف</li>
+      <li>فضای کار محلی، علاقه‌مندی، مجموعه، اشتراک با کد <code style="direction:ltr">PV1:</code></li>
+      <li>همه داده روی دستگاه شماست (localStorage) — بدون لاگین</li>
     </ul>
-    <h3>مبنا و منبع</h3>
-    <p>داده از کتابخانهٔ داخلی پروژه است. بخش «منتخب‌ها» انتخاب تیمی/کاربردی است (پرکاربرد، مستند، نقطه شروع) و به‌معنای «بهترین مطلق» یا رتبه‌بندی رسمی یک شرکت نیست. محبوبیت با اثربخشی یکی نیست.</p>
-    <h3>فایل‌ها: خروجی متنی، پشتیبان، بازیابی</h3>
+    <h3>چطور شروع کنم؟</h3>
     <ul>
-      <li><b style="color:var(--text)">خروجی متنی:</b> فایل خوانا شامل شورتکات‌ها، پرامپت و توضیح هر دستور — برای مطالعه و کپی دستی.</li>
-      <li><b style="color:var(--text)">پشتیبان کار:</b> فایل ساختاریافته برای برگرداندن علاقه‌مندی‌ها، مجموعه‌ها، recent و انتخاب‌ها.</li>
-      <li><b style="color:var(--text)">بازیابی پشتیبان:</b> فقط فایل پشتیبان معتبر؛ پیش‌نمایش تعداد آیتم‌ها قبل از تأیید؛ فقط شورتکات‌های موجود در کتابخانه؛ خروجی متنی خوانا قابل بازیابی نیست.</li>
+      <li>جستجو یا منتخب‌ها / ترکیب آماده</li>
+      <li>جزئیات را بخوانید و به انتخاب‌ها اضافه کنید</li>
+      <li>پرامپت را بسازید و کپی کنید</li>
     </ul>
-    <h3>حریم خصوصی و امنیت</h3>
-    <p>بدون حساب کاربری. داده در مرورگر شما ذخیره می‌شود. در انتشار استاتیک (مثلاً GitHub Pages) هر کاربر فقط روی دادهٔ محلی خودش اثر می‌گذارد، نه روی سایت مشترک دیگران. فقط پشتیبان خودتان را بازیابی کنید.</p>
+    <h3>حریم خصوصی</h3>
+    <p>بدون حساب کاربری. پشتیبان و کد اشتراک فقط در اختیار خودتان است.</p>
     <div class="about-meta">
-      نسخه: v1.8<br>
-      آخرین به‌روزرسانی مستندات محصول: 2026-09-20 (فاز ۱۱)<br>
-      مدل: Persian-first UI · Command names in English · Local-first
+      نسخه رابط: v1.8+ (فازهای بهبود UX / پرامپت / فضای کار)<br>
+      مدل: Persian-first · نام شورتکات انگلیسی · Local-first
     </div>
   </div>
 </div>
@@ -891,28 +968,41 @@ body.compact .scard-top .cmd{font-size:12px}
     <div class="guide-inner" id="guideInner">
       <h2 style="margin:0 0 6px">راهنمای انتخاب — PromptVault</h2>
       <p style="color:var(--muted);font-size:13px;margin:0 0 14px;line-height:1.8">
-        این راهنما با قابلیت‌های فعلی PromptVault (کتابخانه، منتخب‌ها، سبک‌ها، ترکیب‌های آماده، Inspector و فضای کار) هم‌خوان است.
-        فیلد سوژه اختیاری است؛ می‌توانید فقط با شورتکات‌ها کار کنید.
+        راهنمای هم‌راستا با نسخه فعلی: کتابخانه، فیلترها، مسیر کار، پرامپت ساختاریافته، تداخل، فضای کار و اشتراک کد.
       </p>
 
       <div class="nav">
         <a href="#g-start">شروع سریع</a>
+        <a href="#g-features">قابلیت‌های تازه</a>
         <a href="#g-curated">منتخب‌ها</a>
         <a href="#g-styles">سبک‌ها</a>
-        <a href="#g-recipes">ترکیب آماده</a>
-        <a href="#g-personal">پرتره شخصی</a>
+        <a href="#g-recipes">ترکیب و مسیر</a>
+        <a href="#g-personal">پرتره</a>
         <a href="#g-product">محصول</a>
         <a href="#g-rules">قواعد</a>
         <a href="#g-flow">مسیر کار</a>
       </div>
 
       <section class="section" id="g-start">
-        <h2>شروع سریع (۴ قدم)</h2>
+        <h2>شروع سریع (۵ قدم)</h2>
         <p class="intro" style="color:var(--muted);font-size:12.5px;line-height:1.85">
-          ۱) از سایدبار <b style="color:var(--text)">منتخب‌ها</b> یا جستجو شروع کنید.<br>
-          ۲) روی کارت کلیک کنید تا Inspector باز شود (توضیح فارسی، تگ، موارد مرتبط).<br>
-          ۳) با «افزودن به انتخاب» یا یک <b style="color:var(--text)">ترکیب آماده</b> چند شورتکات را جمع کنید.<br>
-          ۴) «ساخت پرامپت» یا «کپی شورتکات‌ها» را بزنید. نسبت تصویر را در صورت نیاز جداگانه در موتور تصویر تنظیم کنید.
+          ۱) جستجو کنید یا از <b style="color:var(--text)">منتخب‌ها</b> / <b style="color:var(--text)">ترکیب‌های آماده</b> شروع کنید.<br>
+          ۲) «جزئیات» را باز کنید؛ توضیح فارسی، مکمل‌ها و دلیل پیشنهاد را ببینید.<br>
+          ۳) به انتخاب‌ها اضافه کنید (در موبایل ضربه روی کارت = انتخاب سریع).<br>
+          ۴) اگر هشدار تداخل آمد، یکی را نگه دارید.<br>
+          ۵) «ساخت پرامپت» — خروجی به‌صورت موضوع → نور → جزئیات مرتب می‌شود؛ بعد کپی کنید.
+        </p>
+      </section>
+
+      <section class="section" id="g-features">
+        <h2>قابلیت‌های مهم نسخه فعلی</h2>
+        <p class="intro" style="color:var(--muted);font-size:12.5px;line-height:1.85">
+          • <b style="color:var(--text)">فیلترها:</b> دکمه «فیلترها» زیر جستجو — تگ، تاریخچه، منتخب/علاقه‌مندی<br>
+          • <b style="color:var(--text)">Shift+کلیک</b> روی دسته‌های سایدبار = فیلتر ترکیبی چند دسته<br>
+          • <b style="color:var(--text)">مسیر کار</b> در ترکیب‌های آماده: پرتره / محصول / سینمایی / غذا<br>
+          • <b style="color:var(--text)">اشتراک انتخاب:</b> منوی بیشتر → کد PV1 برای ارسال به دیگران<br>
+          • <b style="color:var(--text)">فضای کار:</b> چند فضای نام‌گذاری‌شده + پیشنهاد شخصی محلی<br>
+          • میانبرها: <span style="direction:ltr;display:inline-block">/</span> جستجو · f علاقه‌مندی · c کپی · b ساخت پرامپت
         </p>
       </section>
 
@@ -3072,6 +3162,83 @@ $("variantNoiseBtn") && ($("variantNoiseBtn").onclick = () => {
   toast(state.hideVariantNoise ? "نسخه‌های HD/PREM مخفی شدند" : "همه نسخه‌ها نمایش داده می‌شوند");
 });
 if($("variantNoiseBtn")) $("variantNoiseBtn").classList.toggle("primary", !!state.hideVariantNoise);
+
+
+// UX: more tools dropdown + filters panel
+(function(){
+  const moreBtn = $("moreToolsBtn");
+  const morePanel = $("moreToolsPanel");
+  const moreBack = $("moreBackdrop");
+  function closeMore(){
+    if(morePanel) morePanel.setAttribute("hidden", "");
+    if(moreBtn) moreBtn.setAttribute("aria-expanded", "false");
+    if(moreBack) moreBack.classList.remove("show");
+  }
+  function openMore(){
+    if(morePanel) morePanel.removeAttribute("hidden");
+    if(moreBtn) moreBtn.setAttribute("aria-expanded", "true");
+    if(moreBack) moreBack.classList.add("show");
+  }
+  if(moreBtn && morePanel){
+    moreBtn.onclick = (e) => {
+      e.stopPropagation();
+      const isOpen = !morePanel.hasAttribute("hidden");
+      if(isOpen) closeMore(); else openMore();
+    };
+    if(moreBack) moreBack.onclick = closeMore;
+    document.addEventListener("click", (e) => {
+      if(morePanel.hasAttribute("hidden")) return;
+      if(moreBtn.contains(e.target) || morePanel.contains(e.target)) return;
+      closeMore();
+    });
+    morePanel.addEventListener("click", e => {
+      // close after choosing an item
+      if(e.target.classList.contains("more-item")) setTimeout(closeMore, 50);
+    });
+  }
+  const fBtn = $("filtersToggleBtn");
+  const fPanel = $("filtersPanel");
+  if(fBtn && fPanel){
+    fBtn.onclick = () => {
+      const open = fPanel.hasAttribute("hidden");
+      if(open) fPanel.removeAttribute("hidden"); else fPanel.setAttribute("hidden", "");
+      fBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      fBtn.textContent = open ? "فیلترها ▴" : "فیلترها ▾";
+      if(open){
+        if(typeof renderTagChips === "function") renderTagChips();
+        if(typeof renderSearchHist === "function") renderSearchHist();
+      }
+    };
+  }
+})();
+
+
+// Public visit counter (best-effort; fails silently offline)
+(function loadVisitCount(){
+  const el = document.getElementById("visitCount");
+  if(!el) return;
+  const KEY = "promptvault_gh_visits_v1";
+  const endpoint = "https://api.countapi.xyz/hit/akhaviamir0308-bit.github.io/PromptVault-";
+  const formatFa = (n) => {
+    try { return Number(n).toLocaleString("fa-IR"); } catch(e){ return String(n); }
+  };
+  fetch(endpoint, { mode: "cors", cache: "no-store" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(d => {
+      const v = (d && (d.value != null ? d.value : d.count));
+      if(v != null){
+        el.textContent = "بازدید: " + formatFa(v);
+        try { localStorage.setItem(KEY, String(v)); } catch(e){}
+      }
+    })
+    .catch(() => {
+      try {
+        const cached = localStorage.getItem(KEY);
+        if(cached) el.textContent = "بازدید: " + formatFa(cached) + " (ذخیره‌شده)";
+        else el.textContent = "";
+      } catch(e){ el.textContent = ""; }
+    });
+})();
 
 try {
   renderAll();
