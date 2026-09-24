@@ -813,6 +813,7 @@ body.compact .scard-top .cmd{font-size:12px}
           <button class="btn sm primary" id="addToSelBtn" disabled>+ افزودن به انتخاب</button>
           <button class="btn sm" id="buildBtn">ساخت پرامپت</button>
           <button class="btn sm" id="copySelBtn">کپی شورتکات‌ها</button>
+          <button class="btn sm" id="copyPromptBtn">کپی پرامپت</button>
           <button class="btn sm" id="clearSelBtn">پاک‌سازی</button>
           <span class="sel-count" id="selCount">۰ انتخاب</span>
         </div>
@@ -894,6 +895,7 @@ body.compact .scard-top .cmd{font-size:12px}
     <div class="row">
       <button type="button" class="btn primary sm" id="mBuildBtn">ساخت پرامپت</button>
       <button type="button" class="btn sm" id="mCopySelBtn">کپی شورتکات‌ها</button>
+      <button type="button" class="btn sm" id="mCopyPromptBtn">کپی پرامپت</button>
       <button type="button" class="btn sm" id="mClearSelBtn">پاک‌سازی</button>
     </div>
     <div id="mSelChips" class="chip-row" style="max-height:120px;overflow:auto;margin-bottom:8px"></div>
@@ -2862,6 +2864,14 @@ function updateLivePrompt(){
   if($("mOutput")) $("mOutput").value = out;
 }
 
+function copyGeneratedPrompt(){
+  const keys = Object.keys(state.selected);
+  if(!keys.length){ toast("ابتدا شورتکاتی انتخاب کنید", false); return; }
+  const prompt = composePromptText();
+  if(!prompt){ toast("پرامپتی برای کپی وجود ندارد", false); return; }
+  copyText(prompt);
+}
+
 function buildPrompt(){
   const keys = Object.keys(state.selected);
   if(!keys.length){
@@ -2924,6 +2934,7 @@ $("addToSelBtn").onclick = () => {
   renderAll();
 };
 $("buildBtn").onclick = buildPrompt;
+$("copyPromptBtn") && ($("copyPromptBtn").onclick = copyGeneratedPrompt);
 $("copySelBtn").onclick = () => copyText(Object.keys(state.selected).join("\n"));
 $("clearSelBtn").onclick = () => { state.selected = {}; $("output").value=""; renderAll(); toast("پاک شد"); };
 
@@ -3058,9 +3069,10 @@ $("mPromptSheet") && ($("mPromptSheet").onclick = e => {
   if(e.target === $("mPromptSheet")){ openPromptSheet(false); setMNavActive("library"); }
 });
 $("mBuildBtn") && ($("mBuildBtn").onclick = () => buildPrompt());
+$("mCopyPromptBtn") && ($("mCopyPromptBtn").onclick = copyGeneratedPrompt);
 $("mShareBtn") && ($("mShareBtn").onclick = shareSelectionCode);
 $("mImportSelBtn") && ($("mImportSelBtn").onclick = importSelectionCode);
-$("mCopySelBtn") && ($("mCopySelBtn").onclick = () => copyText(Object.keys(state.selected).join("\\n")));
+$("mCopySelBtn") && ($("mCopySelBtn").onclick = () => copyText(Object.keys(state.selected).join("\n")));
 $("mClearSelBtn") && ($("mClearSelBtn").onclick = () => {
   state.selected = {}; if($("output")) $("output").value=""; if($("mOutput")) $("mOutput").value="";
   renderAll(); toast("✓ پاک شد");
