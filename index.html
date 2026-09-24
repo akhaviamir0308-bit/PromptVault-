@@ -619,6 +619,44 @@ body.light .scard.selected::after{background:rgba(79,95,255,.12)}
   }
 }
 
+
+/* Phase 2 */
+.tag-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag-chip{
+  border:1px solid var(--line);background:var(--panel2);color:var(--muted);
+  padding:4px 10px;border-radius:99px;font-size:11px;cursor:pointer;transition:.15s;
+}
+.tag-chip:hover,.tag-chip.on{border-color:var(--accent);color:var(--text);background:rgba(124,140,255,.12)}
+.search-hist{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;min-height:0}
+.search-hist:empty{display:none}
+.hist-chip{
+  border:1px dashed var(--line);background:transparent;color:var(--muted);
+  padding:3px 9px;border-radius:99px;font-size:11px;cursor:pointer;
+}
+.hist-chip:hover{border-color:var(--accent);color:var(--text)}
+body.compact .scard{padding:10px 12px}
+body.compact .scard .meaning{font-size:11px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+body.compact .scard-foot{margin-top:6px}
+body.compact .cards{gap:8px}
+body.compact .scard-top .cmd{font-size:12px}
+.rel-group .rg-actions{margin-top:6px}
+.btn.tiny{padding:3px 8px;font-size:10px;border-radius:7px}
+
+
+/* Phase 3 */
+.conflict-banner.show{display:block;background:rgba(255,113,133,.1);border:1px solid rgba(255,113,133,.35);border-radius:10px;padding:10px;margin:8px 0;font-size:12px;line-height:1.55}
+.cf-item{margin-bottom:8px}
+.cf-item:last-child{margin-bottom:0}
+.cf-tip{color:var(--muted);font-size:11px}
+.cf-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.comp-why{font-size:11px;color:var(--muted);line-height:1.6;margin:6px 0 4px}
+.comp-why b{color:var(--text);font-family:var(--mono);font-weight:600}
+@media (max-width:860px){
+  .m-prompt-panel{max-height:82vh !important;padding-bottom:12px}
+  .m-prompt-panel textarea#mOutput{min-height:130px !important;font-size:12.5px !important;line-height:1.55}
+  .m-prompt-panel .row .btn{flex:1 1 auto}
+}
+
 </style>
 </head>
 <body>
@@ -637,6 +675,8 @@ body.light .scard.selected::after{background:rgba(79,95,255,.12)}
       <button class="btn" id="guideBtn">راهنمای انتخاب</button>
       <button class="btn" id="compareBtn" title="۲ یا ۳ شورتکات را با Shift+کلیک انتخاب کنید">مقایسه</button>
       <button class="btn" id="saveBtn" title="فایل متنی خوانا از انتخاب‌ها و پرامپت">خروجی متنی</button>
+      <button class="btn" id="shareSelBtn" title="کپی کد اشتراک انتخاب‌ها">اشتراک انتخاب</button>
+      <button class="btn" id="importSelBtn" title="ورود از کد اشتراک">ورود کد</button>
       <button class="btn" id="exportWsBtn" title="پشتیبان کامل برای بازیابی بعدی">پشتیبان کار</button>
       <button class="btn" id="importWsBtn" title="فقط فایل پشتیبان معتبر">بازیابی پشتیبان</button>
       <button class="btn" id="themeBtn">حالت روشن</button>
@@ -663,11 +703,15 @@ body.light .scard.selected::after{background:rgba(79,95,255,.12)}
           <button class="qchip" data-q="fashion">Fashion</button>
           <button class="qchip" data-q="product">Product</button>
         </div>
+        <div class="tag-chips" id="tagChips" aria-label="فیلتر تگ"></div>
+        <div class="search-hist" id="searchHist" aria-label="تاریخچه جستجو"></div>
         <div class="lib-meta">
           <span id="resultInfo">—</span>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn sm filter-curated" id="curatedOnlyBtn">★ فقط منتخب‌ها</button>
             <button class="btn sm" id="favOnlyBtn">★ فقط علاقه‌مندی‌ها</button>
+            <button class="btn sm" id="compactBtn" title="حالت فشرده کارت‌ها">چگالی فشرده</button>
+            <button class="btn sm" id="variantNoiseBtn" title="مخفی کردن نسخه‌های HD/PREM تکراری‌نما">تمیزسازی لیست</button>
           </div>
         </div>
       </div>
@@ -787,7 +831,11 @@ body.light .scard.selected::after{background:rgba(79,95,255,.12)}
       </select>
     </div>
     <textarea id="mOutput" readonly placeholder="خروجی پرامپت اینجا ظاهر می‌شود…"></textarea>
-    <p style="font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.6">شورتکات‌ها را از کتابخانه اضافه کنید؛ اینجا پرامپت نهایی را می‌سازید و کپی می‌کنید.</p>
+    <div class="row" style="margin-top:10px">
+      <button type="button" class="btn sm" id="mShareBtn">اشتراک کد انتخاب</button>
+      <button type="button" class="btn sm" id="mImportSelBtn">ورود کد</button>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.6">شورتکات‌ها را از کتابخانه اضافه کنید؛ پرامپت به‌صورت ساختاریافته (موضوع → نور → جزئیات) ساخته می‌شود.</p>
   </div>
 </div>
 
@@ -1269,6 +1317,82 @@ const CURATED_PACKS = [
   { id:"starter", title:"پیشنهادی برای شروع", en:"Starter Picks", desc:"اگر نمی‌دانید از کجا شروع کنید، این مجموعه نقطه ورود است.", cmds:["/CINEMATIC","/GOLDEN_HOUR","/NATURAL_SKIN","/SOFTBOX","/PORTRAIT_LENS","/RIM_LIGHT"] }
 ];
 
+/* Phase3: simple workflow presets (not a full PE engine) */
+const WORKFLOWS = [
+  { id:"wf_portrait", title:"مسیر پرتره حرفه‌ای", en:"Portrait path", steps:[
+    {label:"پایه", cmds:["/PHOTOREALISTIC","/NATURAL_SKIN","/PORTRAIT_LENS"]},
+    {label:"نور", cmds:["/SOFTBOX","/RIM_LIGHT"]},
+    {label:"جزئیات", cmds:["/EYE_DETAIL","/HIGH_MICRODETAIL"]}
+  ]},
+  { id:"wf_product", title:"مسیر محصول فروشگاهی", en:"Product path", steps:[
+    {label:"پایه", cmds:["/COMMERCIAL_REALISM","/LIFELIKE_MATERIALS"]},
+    {label:"نور", cmds:["/SOFTBOX","/TRUE_COLOR"]},
+    {label:"جزئیات", cmds:["/HIGH_MICRODETAIL"]}
+  ]},
+  { id:"wf_cinematic", title:"مسیر سینمایی", en:"Cinematic path", steps:[
+    {label:"پایه", cmds:["/CINEMATIC","/FILM_GRAIN"]},
+    {label:"نور/فضا", cmds:["/VOLUMETRIC","/MOODY_DRAMA"]},
+    {label:"لنز", cmds:["/ANAMORPHIC"]}
+  ]},
+  { id:"wf_food", title:"مسیر غذا", en:"Food path", steps:[
+    {label:"پایه", cmds:["/PHOTOREALISTIC","/HIGH_MICRODETAIL"]},
+    {label:"نور", cmds:["/WINDOW_LIGHT","/GOLDEN_HOUR"]},
+    {label:"حس", cmds:["/TRUE_COLOR"]}
+  ]}
+];
+
+const COMPLEMENT_WHY = {
+  "/CINEMATIC": "حس فیلم و روایت را تقویت می‌کند",
+  "/FILM_GRAIN": "بافت آنالوگ و سینمایی می‌افزاید",
+  "/RIM_LIGHT": "جداسازی سوژه از پس‌زمینه",
+  "/MOODY_DRAMA": "کنتراست احساسی و سایه عمیق",
+  "/ANAMORPHIC": "نمای عریض سینمایی",
+  "/GOLDEN_HOUR": "نور گرم طلایی طبیعی",
+  "/PORTRAIT_LENS": "بوکه و تمرکز روی چهره",
+  "/VOLUMETRIC": "عمق هوا و پرتو نور",
+  "/TRUE_COLOR": "رنگ طبیعی‌تر پوست/محصول",
+  "/NATURAL_SKIN": "پوست واقعی و غیرپلاستیکی",
+  "/SOFTBOX": "نور نرم استودیویی",
+  "/HIGH_MICRODETAIL": "جزئیات ریز سطح",
+  "/LIFELIKE_MATERIALS": "جنس متریال باورپذیر",
+  "/COMMERCIAL_REALISM": "تمیزی تبلیغاتی",
+  "/PHOTOREALISTIC": "نزدیک به عکس واقعی",
+  "/EYE_DETAIL": "چشم‌های واضح در پرتره"
+};
+function whyComplement(cmd){
+  return COMPLEMENT_WHY[cmd] || "معمولاً در کنار انتخاب فعلی خوب جواب می‌دهد";
+}
+function personalSuggestions(limit){
+  limit = limit || 6;
+  const scores = Object.create(null);
+  const bump = (cmd, w) => { if(!cmd) return; scores[cmd] = (scores[cmd]||0) + w; };
+  (state.recentUsed||[]).forEach((c,i) => bump(c, 6-Math.min(i,5)));
+  (state.recentViewed||[]).forEach((c,i) => bump(c, 3-Math.min(i,2)));
+  (state.favorites||[]).forEach(c => bump(c, 4));
+  // category affinity
+  const catScore = Object.create(null);
+  Object.keys(scores).forEach(cmd => {
+    const c = getCmd(cmd);
+    if(c) catScore[c.category] = (catScore[c.category]||0) + scores[cmd];
+  });
+  const topCats = Object.keys(catScore).sort((a,b)=>catScore[b]-catScore[a]).slice(0,3);
+  COMMANDS.forEach(c => {
+    if(topCats.includes(c.category) && !state.selected[c.cmd]) bump(c.cmd, 1.5);
+  });
+  return Object.keys(scores)
+    .filter(c => !state.selected[c] && COMMANDS.some(x => x.cmd === c))
+    .sort((a,b)=>scores[b]-scores[a])
+    .slice(0, limit);
+}
+function isVariantNoise(cmd){
+  const n = String(cmd||"").replace(/^\//,"");
+  return /^(HD|PREM)/i.test(n);
+}
+function saveWorkspaces(){
+  try { localStorage.setItem("pcs_v3_workspaces", JSON.stringify(state.workspaces)); } catch(e){}
+  try { localStorage.setItem("pcs_v3_ws_active", state.activeWorkspace || "default"); } catch(e){}
+}
+
 
 const CONFLICT_PAIRS = [
   ["/SOFTBOX", "/HARD_SUN"],
@@ -1276,7 +1400,27 @@ const CONFLICT_PAIRS = [
   ["/NATURAL_SKIN", "/3D_RENDER"],
   ["/WINDOW_LIGHT", "/HARD_SUN"],
   ["/PHOTOREALISTIC", "/COMIC_BOOK"],
+  ["/PHOTOREALISTIC", "/ANIME"],
+  ["/FILM_GRAIN", "/CLEAN_STUDIO"],
+  ["/RIM_LIGHT", "/FLAT_LIGHT"],
+  ["/CINEMATIC", "/COMMERCIAL_REALISM"],
+  ["/MACRO", "/WIDE_ANGLE"],
+  ["/SOFTBOX", "/NEON"],
+  ["/GOLDEN_HOUR", "/BLUE_HOUR"],
 ];
+
+// advice: which one to prefer in common cases (soft suggestion only)
+const CONFLICT_ADVICE = {
+  "/SOFTBOX|/HARD_SUN": "برای پرتره/محصول معمولاً SOFTBOX؛ برای درام بیرونی HARD_SUN",
+  "/NEON|/GOLDEN_HOUR": "فضای شهری شب → NEON ؛ غروب گرم → GOLDEN_HOUR",
+  "/NATURAL_SKIN|/3D_RENDER": "رئال انسانی → NATURAL_SKIN ؛ سه‌بعدی → 3D_RENDER",
+  "/WINDOW_LIGHT|/HARD_SUN": "نور نرم داخلی → WINDOW_LIGHT ؛ آفتاب تند → HARD_SUN",
+  "/PHOTOREALISTIC|/COMIC_BOOK": "واقع‌گرا یا کمیک را یکی نگه دارید",
+  "/PHOTOREALISTIC|/ANIME": "واقع‌گرا یا انیمه را یکی نگه دارید",
+  "/MACRO|/WIDE_ANGLE": "نزدیک جزئیات → MACRO ؛ فضای باز → WIDE_ANGLE",
+  "/GOLDEN_HOUR|/BLUE_HOUR": "هر دو «ساعت طلایی/آبی»اند؛ معمولاً یکی کافی است",
+  "/CINEMATIC|/COMMERCIAL_REALISM": "روایی/فیلم → CINEMATIC ؛ تبلیغ تمیز → COMMERCIAL_REALISM"
+};
 
 function findConflicts(selectedKeys){
   const set = new Set(selectedKeys);
@@ -1285,6 +1429,9 @@ function findConflicts(selectedKeys){
     if(set.has(a) && set.has(b)) hits.push([a,b]);
   }
   return hits;
+}
+function conflictAdvice(a,b){
+  return CONFLICT_ADVICE[a+"|"+b] || CONFLICT_ADVICE[b+"|"+a] || "معمولاً یکی را نگه دارید تا پیام بصری شلوغ نشود.";
 }
 
 const LABEL_FA = {
@@ -1345,6 +1492,23 @@ let state = {
   showWorkspace: false,
   showCurated: false,
   libraryLimit: 60, // Phase1: progressive loading
+  tagFilter: null, // Phase2: popular tag filter
+  compactMode: localStorage.getItem("pcs_v3_compact") === "1",
+  searchHistory: (function(){
+    try {
+      const v = JSON.parse(localStorage.getItem("pcs_v3_search_hist") || "[]");
+      return Array.isArray(v) ? v.filter(x => typeof x === "string").slice(0, 8) : [];
+    } catch(e){ return []; }
+  })(),
+  activeWorkspace: localStorage.getItem("pcs_v3_ws_active") || "default",
+  workspaces: (function(){
+    try {
+      const v = JSON.parse(localStorage.getItem("pcs_v3_workspaces") || "null");
+      if(v && typeof v === "object" && !Array.isArray(v)) return v;
+    } catch(e){}
+    return { default: { name: "اصلی", selected: [] } };
+  })(),
+  hideVariantNoise: localStorage.getItem("pcs_v3_hide_variants") !== "0",
   favorites: safeCmdArray(localStorage.getItem(FAV_KEY), 500),
   collections: (function(){
     const v = safeJsonParse(localStorage.getItem(COL_KEY), []);
@@ -1382,6 +1546,26 @@ function toast(msg, ok=true){
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
 }
+
+/* Phase 2 helpers */
+const POPULAR_TAGS = [
+  {id:"skin", fa:"پوست", en:"skin"},
+  {id:"light", fa:"نور", en:"light lighting"},
+  {id:"cinematic", fa:"سینمایی", en:"cinematic film"},
+  {id:"product", fa:"محصول", en:"product commercial"},
+  {id:"portrait", fa:"پرتره", en:"portrait face"},
+  {id:"mood", fa:"حال‌وهوا", en:"mood atmosphere"},
+  {id:"detail", fa:"جزئیات", en:"detail microdetail sharp"},
+  {id:"color", fa:"رنگ", en:"color tone palette"}
+];
+function pushSearchHistory(q){
+  q = String(q || "").trim();
+  if(!q || q.length < 2) return;
+  state.searchHistory = [q, ...state.searchHistory.filter(x => x !== q)].slice(0, 8);
+  try { localStorage.setItem("pcs_v3_search_hist", JSON.stringify(state.searchHistory)); } catch(e){}
+}
+function saveCompact(){ localStorage.setItem("pcs_v3_compact", state.compactMode ? "1" : "0"); }
+
 function isFav(cmd){ return state.favorites.includes(cmd); }
 function toggleFav(cmd){
   state.favorites = isFav(cmd) ? state.favorites.filter(x=>x!==cmd) : [...state.favorites, cmd];
@@ -1511,6 +1695,7 @@ function renderSidebar(){
 function filtered(){
   const q = (state.search || state.quick || "").trim().toLowerCase();
   return COMMANDS.filter(c => {
+    if(state.hideVariantNoise && isVariantNoise(c.cmd) && !(state.search||"").trim()) return false;
     if(state.onlyCurated && !getCurated(c.cmd)) return false;
     if(state.onlyFav || state.category === "fav"){
       if(!isFav(c.cmd)) return false;
@@ -1526,6 +1711,14 @@ function filtered(){
       if(!state.multiCats.has(c.category)) return false;
     } else if(state.category && state.category !== "all" && state.category !== "styles"){
       if(c.category !== state.category) return false;
+    }
+    if(state.tagFilter){
+      const tag = POPULAR_TAGS.find(t => t.id === state.tagFilter);
+      if(tag){
+        const hayT = `${c.cmd} ${c.meaning} ${c.description} ${c.category}`.toLowerCase();
+        const parts = (tag.en + " " + tag.fa).toLowerCase().split(/\s+/);
+        if(!parts.some(p => p && hayT.includes(p))) return false;
+      }
     }
     if(!q) return true;
     const catFa = (CAT_FA[c.category] || "").toLowerCase();
@@ -1575,8 +1768,24 @@ function renderStylesGrid(){
 
 function renderRecipesGrid(){
   const grid = $("grid");
-  $("resultInfo").textContent = `${RECIPES.length.toLocaleString("fa-IR")} ترکیب آماده`;
-  grid.innerHTML = RECIPES.map(r => {
+  $("resultInfo").textContent = `${RECIPES.length.toLocaleString("fa-IR")} ترکیب · ${WORKFLOWS.length.toLocaleString("fa-IR")} مسیر کار`;
+  const wfHtml = WORKFLOWS.map(w => {
+    const allCmds = w.steps.flatMap(s => s.cmds);
+    const available = allCmds.filter(c => COMMANDS.some(x => x.cmd === c));
+    return `<article class="style-card" style="cursor:default;border-color:rgba(124,140,255,.35)">
+      <div class="style-body" style="padding:14px">
+        <div class="style-title">🧭 ${escapeHtml(w.title)}</div>
+        <div class="style-en">${escapeHtml(w.en)}</div>
+        <p class="style-desc">مسیر مرحله‌ای (پایه → نور/فضا → جزئیات). ساده و قابل‌ویرایش.</p>
+        <div style="font-size:11px;color:var(--muted);line-height:1.7;margin:8px 0">${w.steps.map(s => `<div><b>${escapeHtml(s.label)}:</b> ${s.cmds.map(escapeHtml).join(" · ")}</div>`).join("")}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+          <button class="btn sm primary" data-wf="${escapeHtml(w.id)}">اجرای مسیر</button>
+          <button class="btn sm" data-wf-build="${escapeHtml(w.id)}">اجرا + ساخت پرامپت</button>
+        </div>
+      </div>
+    </article>`;
+  }).join("");
+  grid.innerHTML = wfHtml + RECIPES.map(r => {
     const available = r.cmds.filter(c => COMMANDS.some(x => x.cmd === c));
     return `<article class="style-card" style="cursor:default">
       <div class="style-body" style="padding:14px">
@@ -1584,31 +1793,73 @@ function renderRecipesGrid(){
         <div class="style-en">${escapeHtml(r.en)}</div>
         <p class="style-desc">${escapeHtml(r.desc)}</p>
         <div class="rc-cmds" style="font-family:var(--mono);font-size:11px;direction:ltr;text-align:left;color:var(--accent);line-height:1.7;margin:8px 0;white-space:pre-wrap">${available.map(escapeHtml).join("\n")}</div>
-        <button class="btn sm primary" data-recipe="${escapeHtml(r.id)}">افزودن همه به انتخاب‌ها</button>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+          <button class="btn sm primary" data-recipe="${escapeHtml(r.id)}">افزودن همه به انتخاب‌ها</button>
+          <button class="btn sm" data-recipe-build="${escapeHtml(r.id)}">افزودن + ساخت پرامپت</button>
+        </div>
       </div>
     </article>`;
   }).join("");
+  const applyRecipe = (id, andBuild) => {
+    const r = RECIPES.find(x => x.id === id);
+    if(!r) return;
+    r.cmds.forEach(cmd => {
+      if(COMMANDS.some(c => c.cmd === cmd)){
+        state.selected[cmd] = true;
+        pushRecentUsed(cmd);
+      }
+    });
+    renderAll();
+    if(andBuild && typeof buildPrompt === "function") buildPrompt();
+    else toast("ترکیب به انتخاب‌ها اضافه شد");
+  };
   grid.querySelectorAll("[data-recipe]").forEach(btn => {
-    btn.onclick = () => {
-      const r = RECIPES.find(x => x.id === btn.dataset.recipe);
-      if(!r) return;
-      r.cmds.forEach(cmd => {
-        if(COMMANDS.some(c => c.cmd === cmd)){
-          state.selected[cmd] = true;
-          pushRecentUsed(cmd);
-        }
-      });
-      renderAll();
-      toast("ترکیب به انتخاب‌ها اضافه شد");
-    };
+    btn.onclick = () => applyRecipe(btn.dataset.recipe, false);
   });
+  grid.querySelectorAll("[data-recipe-build]").forEach(btn => {
+    btn.onclick = () => applyRecipe(btn.dataset.recipeBuild, true);
+  });
+  const applyWf = (id, andBuild) => {
+    const w = WORKFLOWS.find(x => x.id === id);
+    if(!w) return;
+    w.steps.forEach(s => s.cmds.forEach(cmd => {
+      if(COMMANDS.some(c => c.cmd === cmd)){ state.selected[cmd] = true; pushRecentUsed(cmd); }
+    }));
+    renderAll();
+    if(andBuild && typeof buildPrompt === "function") buildPrompt();
+    else toast("مسیر کار اعمال شد");
+  };
+  grid.querySelectorAll("[data-wf]").forEach(btn => { btn.onclick = () => applyWf(btn.dataset.wf, false); });
+  grid.querySelectorAll("[data-wf-build]").forEach(btn => { btn.onclick = () => applyWf(btn.dataset.wfBuild, true); });
 }
 
 function renderWorkspace(){
   const grid = $("grid");
   $("resultInfo").textContent = "فضای کار شخصی";
+  const pers = typeof personalSuggestions === "function" ? personalSuggestions(8) : [];
+  const wsKeys = Object.keys(state.workspaces || {default:{name:"اصلی"}});
   let html = `<div style="grid-column:1/-1">
     <div class="ws-section" style="border:0;padding-top:0;margin-top:0">
+      <h4>فضای کار نام‌گذاری‌شده</h4>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 8px">انتخاب‌های فعلی را در چند فضای جدا نگه دارید (فقط روی همین دستگاه).</p>
+      <div class="recent-list" id="wsSwitchList">${wsKeys.map(k => {
+        const ws = state.workspaces[k];
+        const active = state.activeWorkspace === k;
+        return `<button type="button" class="${active?"primary":""}" data-ws-switch="${escapeHtml(k)}" style="${active?"border-color:var(--accent);color:var(--accent)":""}">${escapeHtml((ws&&ws.name)||k)}</button>`;
+      }).join("")}
+      <button type="button" data-ws-new="1">+ فضای جدید</button></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+        <button class="btn sm primary" id="wsSaveHere">ذخیره انتخاب فعلی در این فضا</button>
+        <button class="btn sm" id="wsLoadHere">بارگذاری انتخاب‌های این فضا</button>
+      </div>
+    </div>
+    <div class="ws-section">
+      <h4>پیشنهاد شخصی (بر اساس فعالیت شما)</h4>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 8px">فقط از علاقه‌مندی‌ها و موارد اخیر همین دستگاه — بدون سرور.</p>
+      <div class="recent-list">${pers.length ? pers.map(c => `<button data-goto="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("") : "<span style='color:var(--muted);font-size:12px'>با استفاده بیشتر، پیشنهادها دقیق‌تر می‌شوند.</span>"}</div>
+      ${pers.length ? `<div style="margin-top:8px"><button class="btn sm primary" id="addPersonalBtn">افزودن پیشنهادها به انتخاب</button></div>` : ""}
+    </div>
+    <div class="ws-section">
       <h4>اخیراً مشاهده‌شده</h4>
       <div class="recent-list">${state.recentViewed.length ? state.recentViewed.map(c => `<button data-goto="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("") : "<span style='color:var(--muted);font-size:12px'>هنوز موردی مشاهده نشده است.</span>"}</div>
     </div>
@@ -1651,6 +1902,50 @@ function renderWorkspace(){
       renderAll();
     };
   });
+  // Phase3 workspace switcher
+  grid.querySelectorAll("[data-ws-switch]").forEach(b => {
+    b.onclick = () => {
+      state.activeWorkspace = b.dataset.wsSwitch;
+      saveWorkspaces();
+      renderAll();
+      toast("فضای کار: " + ((state.workspaces[state.activeWorkspace]||{}).name || state.activeWorkspace));
+    };
+  });
+  const newBtn = grid.querySelector("[data-ws-new]");
+  if(newBtn) newBtn.onclick = () => {
+    const name = prompt("نام فضای کار جدید:");
+    if(!name || !name.trim()) return;
+    const id = "ws_" + Date.now().toString(36);
+    state.workspaces[id] = { name: name.trim().slice(0,40), selected: [] };
+    state.activeWorkspace = id;
+    saveWorkspaces();
+    renderAll();
+    toast("فضای کار ساخته شد");
+  };
+  const saveBtn = grid.querySelector("#wsSaveHere");
+  if(saveBtn) saveBtn.onclick = () => {
+    const id = state.activeWorkspace || "default";
+    if(!state.workspaces[id]) state.workspaces[id] = { name: "اصلی", selected: [] };
+    state.workspaces[id].selected = Object.keys(state.selected);
+    saveWorkspaces();
+    toast("انتخاب‌ها در این فضا ذخیره شد");
+  };
+  const loadBtn = grid.querySelector("#wsLoadHere");
+  if(loadBtn) loadBtn.onclick = () => {
+    const id = state.activeWorkspace || "default";
+    const ws = state.workspaces[id];
+    state.selected = {};
+    (ws && ws.selected || []).forEach(c => { if(COMMANDS.some(x=>x.cmd===c)) state.selected[c]=true; });
+    renderAll();
+    toast("انتخاب‌های فضا بارگذاری شد");
+  };
+  const addPers = grid.querySelector("#addPersonalBtn");
+  if(addPers) addPers.onclick = () => {
+    const pers = personalSuggestions(8);
+    pers.forEach(c => { state.selected[c]=true; pushRecentUsed(c); });
+    renderAll();
+    toast("پیشنهادها اضافه شدند");
+  };
   grid.querySelector("#createColBtn").onclick = () => {
     const name = (grid.querySelector("#newColName").value || "").trim();
     if(!name) return toast("نام مجموعه را وارد کنید");
@@ -1713,6 +2008,50 @@ function renderCurated(){
       toast("✓ ترکیب منتخب به انتخاب‌ها اضافه شد");
     };
   });
+}
+
+
+function renderTagChips(){
+  const el = $("tagChips");
+  if(!el) return;
+  el.innerHTML = POPULAR_TAGS.map(t =>
+    `<button type="button" class="tag-chip ${state.tagFilter===t.id?"on":""}" data-tag="${escapeHtml(t.id)}">${escapeHtml(t.fa)}</button>`
+  ).join("");
+  el.querySelectorAll("[data-tag]").forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.tag;
+      state.tagFilter = state.tagFilter === id ? null : id;
+      state.libraryLimit = 60;
+      renderLibrary();
+      renderTagChips();
+      toast(state.tagFilter ? ("تگ: " + (POPULAR_TAGS.find(x=>x.id===id)||{}).fa) : "فیلتر تگ برداشته شد");
+    };
+  });
+}
+function renderSearchHist(){
+  const el = $("searchHist");
+  if(!el) return;
+  if(!state.searchHistory.length){ el.innerHTML = ""; return; }
+  el.innerHTML = state.searchHistory.map(q =>
+    `<button type="button" class="hist-chip" data-hist="${escapeHtml(q)}">${escapeHtml(q)}</button>`
+  ).join("");
+  el.querySelectorAll("[data-hist]").forEach(btn => {
+    btn.onclick = () => {
+      const q = btn.dataset.hist;
+      state.search = q;
+      state.quick = "";
+      state.libraryLimit = 60;
+      if($("search")) $("search").value = q;
+      document.querySelectorAll(".qchip").forEach(c => c.classList.remove("on"));
+      renderLibrary();
+      renderSidebar();
+    };
+  });
+}
+function applyCompactClass(){
+  document.body.classList.toggle("compact", !!state.compactMode);
+  const b = $("compactBtn");
+  if(b) b.classList.toggle("primary", !!state.compactMode);
 }
 
 function renderLibrary(){
@@ -1952,7 +2291,9 @@ function renderInspector(){
     <div class="insp-block">
       <div class="insp-label">موارد مرتبط</div>
       ${similar.length ? `<div class="rel-group"><div class="rg-title">مشابه</div><div class="related">${similar.map(r=>`<button data-rel="${escapeHtml(r)}">${escapeHtml(r)}</button>`).join("")}</div></div>` : ""}
-      ${complement.length ? `<div class="rel-group"><div class="rg-title">مکمل</div><div class="related">${complement.map(r=>`<button data-rel="${escapeHtml(r)}">${escapeHtml(r)}</button>`).join("")}</div></div>` : ""}
+      ${complement.length ? `<div class="rel-group"><div class="rg-title">مکمل پیشنهادی</div><div class="related">${complement.map(r=>`<button data-rel="${escapeHtml(r)}" title="${escapeHtml(whyComplement(r))}">${escapeHtml(r)}</button>`).join("")}</div>
+        <div class="comp-why">${complement.slice(0,3).map(r => `<div><b>${escapeHtml(r)}</b> — ${escapeHtml(whyComplement(r))}</div>`).join("")}</div>
+        <div class="rg-actions"><button class="btn tiny" data-add-complements="${complement.map(escapeHtml).join(",")}">+ افزودن همه مکمل‌ها</button></div></div>` : ""}
       ${recipeHits.length ? `<div class="rel-group"><div class="rg-title">در ترکیب‌های پیشنهادی</div><div class="related">${recipeHits.map(r=>`<button data-open-recipe="${escapeHtml(r.id)}">${escapeHtml(r.title)}</button>`).join("")}</div></div>` : ""}
     </div>
     <div class="insp-actions">
@@ -1984,6 +2325,19 @@ function renderInspector(){
 
   content.querySelectorAll("[data-rel]").forEach(b => {
     b.onclick = () => { state.activeCmd = b.dataset.rel; renderAll(); };
+  });
+  content.querySelectorAll("[data-add-complements]").forEach(b => {
+    b.onclick = () => {
+      const list = (b.dataset.addComplements || "").split(",").map(s => s.trim()).filter(Boolean);
+      list.forEach(cmd => {
+        if(COMMANDS.some(c => c.cmd === cmd)){
+          state.selected[cmd] = true;
+          pushRecentUsed(cmd);
+        }
+      });
+      renderAll();
+      toast("✓ مکمل‌ها به انتخاب‌ها اضافه شدند");
+    };
   });
   content.querySelectorAll("[data-open-recipe]").forEach(b => {
     b.onclick = () => {
@@ -2047,18 +2401,34 @@ function renderSelection(){
   // Phase1: live prompt preview
   if(typeof updateLivePrompt === "function") updateLivePrompt();
   const hits = findConflicts(keys);
-  const conflictText = hits.length
-    ? ("هشدار تداخل: " + hits.map(([a,b]) => a + " با " + b).join(" · ") + " — معمولاً یکی را نگه دارید.")
-    : "";
   const banner = $("conflictBanner");
   if(banner){
-    if(hits.length){ banner.classList.add("show"); banner.textContent = conflictText; }
-    else { banner.classList.remove("show"); banner.textContent = ""; }
+    if(hits.length){
+      banner.classList.add("show");
+      banner.innerHTML = hits.map(([a,b]) => {
+        const tip = conflictAdvice(a,b);
+        return `<div class="cf-item"><b>${escapeHtml(a)}</b> × <b>${escapeHtml(b)}</b><br><span class="cf-tip">${escapeHtml(tip)}</span>
+          <div class="cf-acts">
+            <button type="button" class="btn tiny" data-cf-keep="${escapeHtml(a)}" data-cf-drop="${escapeHtml(b)}">نگه داشتن ${escapeHtml(a)}</button>
+            <button type="button" class="btn tiny" data-cf-keep="${escapeHtml(b)}" data-cf-drop="${escapeHtml(a)}">نگه داشتن ${escapeHtml(b)}</button>
+          </div></div>`;
+      }).join("");
+      banner.querySelectorAll("[data-cf-keep]").forEach(btn => {
+        btn.onclick = () => {
+          const drop = btn.dataset.cfDrop;
+          if(drop && state.selected[drop]) delete state.selected[drop];
+          renderAll();
+          toast("تداخل ساده شد");
+        };
+      });
+    } else { banner.classList.remove("show"); banner.innerHTML = ""; }
   }
   const mBanner = $("mConflictBanner");
   if(mBanner){
-    if(hits.length){ mBanner.classList.add("show"); mBanner.textContent = conflictText; }
-    else { mBanner.classList.remove("show"); mBanner.textContent = ""; }
+    if(hits.length){
+      mBanner.classList.add("show");
+      mBanner.textContent = "هشدار تداخل: " + hits.map(([a,b]) => a + " با " + b).join(" · ");
+    } else { mBanner.classList.remove("show"); mBanner.textContent = ""; }
   }
   const chipsHtml = keys.map(cmd =>
     `<span class="chip">${escapeHtml(cmd)} <button type="button" data-rm="${escapeHtml(cmd)}">×</button></span>`
@@ -2193,6 +2563,56 @@ function previewWorkspace(data){
   const sel = sanitizeCmdList(data.selected || [], 200).length;
   return { fav, cols, colItems, rv, ru, sel };
 }
+
+/* Phase3: shareable selection code (no server) */
+function encodeSelectionShare(){
+  const keys = Object.keys(state.selected);
+  if(!keys.length) return "";
+  const payload = { v:1, cmds: keys.slice(0, 80), engine: state.engine || "generic" };
+  try {
+    return "PV1:" + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  } catch(e){
+    return "PV1:" + btoa(JSON.stringify(payload));
+  }
+}
+function decodeSelectionShare(raw){
+  raw = String(raw||"").trim();
+  if(!raw.startsWith("PV1:")) return null;
+  try {
+    const json = decodeURIComponent(escape(atob(raw.slice(4))));
+    const data = JSON.parse(json);
+    if(!data || !Array.isArray(data.cmds)) return null;
+    return data;
+  } catch(e){
+    try {
+      const data = JSON.parse(atob(raw.slice(4)));
+      if(!data || !Array.isArray(data.cmds)) return null;
+      return data;
+    } catch(e2){ return null; }
+  }
+}
+function shareSelectionCode(){
+  const code = encodeSelectionShare();
+  if(!code){ toast("ابتدا شورتکاتی انتخاب کنید", false); return; }
+  copyText(code);
+  toast("کد اشتراک کپی شد — برای دیگری بفرستید");
+}
+function importSelectionCode(){
+  const raw = prompt("کد اشتراک PromptVault را بچسبانید (با PV1: شروع می‌شود):");
+  if(!raw) return;
+  const data = decodeSelectionShare(raw);
+  if(!data){ toast("کد نامعتبر است", false); return; }
+  let n = 0;
+  data.cmds.forEach(c => {
+    if(typeof c === "string" && COMMANDS.some(x => x.cmd === c)){
+      state.selected[c] = true; n++;
+    }
+  });
+  if(data.engine){ state.engine = data.engine; saveEngine(); }
+  renderAll();
+  toast(n ? (`✓ ${n} شورتکات از کد وارد شد`) : "موردی از کتابخانه فعلی پیدا نشد", !!n);
+}
+
 function buildPromptTextFromSelection(){
   // Phase1: reuse unified composer
   return typeof composePromptText === "function" ? composePromptText() : "";
@@ -2298,31 +2718,44 @@ function renderAll(){
   renderLibrary();
   renderInspector();
   renderSelection();
+  if(typeof renderTagChips === "function") renderTagChips();
+  if(typeof renderSearchHist === "function") renderSearchHist();
+  if(typeof applyCompactClass === "function") applyCompactClass();
 }
 
+function meaningOf(cmd){
+  const c = getCmd(cmd);
+  let t = c ? (c.meaning || cmd.replace(/^\//,"").replace(/_/g," ").toLowerCase()) : cmd.replace(/^\//,"").replace(/_/g," ").toLowerCase();
+  return String(t).trim().toLowerCase();
+}
 function composePromptText(){
   const keys = Object.keys(state.selected);
   if(!keys.length) return "";
-  const order = ["POR","FASH","PROD","FOOD","ARCH","SCIFI","CAM","LIGHT","ATMOS","BG","COM","COLOR","MATERIAL","MOOD","STYLE","CINE","REAL","FANT","ILL","MOTION","TECH","SOCIAL"];
-  const rank = cat => { const i = order.indexOf(cat); return i < 0 ? 50 : i; };
-  const sorted = keys.slice().sort((a,b) => {
-    const ca = getCmd(a), cb = getCmd(b);
-    return rank(ca && ca.category) - rank(cb && cb.category) || a.localeCompare(b);
-  });
+  // Phase3: simple 3-bucket structure (subject/style · light/camera · detail/quality)
+  const bucketA = new Set(["POR","FASH","PROD","FOOD","ARCH","SCIFI","FANT","ILL","SOCIAL","STYLE","CINE","REAL","MOOD"]); // subject & style
+  const bucketB = new Set(["LIGHT","CAM","ATMOS","BG","COM"]); // light / camera / space
+  const bucketC = new Set(["COLOR","MATERIAL","MOTION","TECH"]); // detail / technical
   const seen = new Set();
-  const parts = [];
-  sorted.forEach(cmd => {
+  const A=[], B=[], C=[], rest=[];
+  keys.forEach(cmd => {
     const c = getCmd(cmd);
-    let t = c ? (c.meaning || cmd.replace(/^\//,"").replace(/_/g," ").toLowerCase()) : cmd.replace(/^\//,"").replace(/_/g," ").toLowerCase();
-    t = String(t).trim().toLowerCase();
+    const cat = (c && c.category) || "";
+    let t = meaningOf(cmd);
     if(!t || seen.has(t)) return;
     seen.add(t);
-    parts.push(t);
+    if(bucketA.has(cat)) A.push(t);
+    else if(bucketB.has(cat)) B.push(t);
+    else if(bucketC.has(cat)) C.push(t);
+    else rest.push(t);
   });
-  let out = parts.join(", ");
+  const sections = [];
+  const s1 = A.concat(rest);
+  if(s1.length) sections.push(s1.join(", "));
+  if(B.length) sections.push(B.join(", "));
+  if(C.length) sections.push(C.join(", "));
+  let out = sections.join(". ");
   if(!out) return "";
   const eng = state.engine || "generic";
-  // Phase1: slightly richer but still simple engine templates
   if(eng === "midjourney") out += " --v 6.1 --stylize 100 --style raw";
   else if(eng === "sdxl") out += ", highly detailed, sharp focus, best quality, 8k";
   else if(eng === "flux") out += ", natural language descriptive scene, coherent lighting, photorealistic detail";
@@ -2357,9 +2790,19 @@ $("search").addEventListener("input", e => {
   state.libraryLimit = 60; // reset progressive limit on new search
   clearTimeout(__searchTimer);
   __searchTimer = setTimeout(() => {
+    if(state.search && state.search.trim().length >= 2) pushSearchHistory(state.search.trim());
     renderLibrary();
     renderSidebar();
+    if(typeof renderSearchHist === "function") renderSearchHist();
   }, 160);
+});
+// Enter on search also saves history
+$("search").addEventListener("keydown", e => {
+  if(e.key === "Enter"){
+    const q = (state.search || "").trim();
+    if(q.length >= 2) pushSearchHistory(q);
+    if(typeof renderSearchHist === "function") renderSearchHist();
+  }
 });
 document.querySelectorAll(".qchip").forEach(chip => {
   chip.onclick = () => {
@@ -2424,6 +2867,8 @@ $("closeCompareBtn") && ($("closeCompareBtn").onclick = () => $("compareModal").
 $("compareModal") && ($("compareModal").onclick = e => { if(e.target===$("compareModal")) e.target.classList.remove("show"); });
 $("exportWsBtn") && ($("exportWsBtn").onclick = exportWorkspace);
 $("importWsBtn") && ($("importWsBtn").onclick = () => $("wsFileInput").click());
+$("shareSelBtn") && ($("shareSelBtn").onclick = shareSelectionCode);
+$("importSelBtn") && ($("importSelBtn").onclick = importSelectionCode);
 $("wsFileInput") && ($("wsFileInput").onchange = e => {
   const f = e.target.files[0]; if(!f) return;
   e.target.value = "";
@@ -2520,6 +2965,8 @@ $("mPromptSheet") && ($("mPromptSheet").onclick = e => {
   if(e.target === $("mPromptSheet")){ openPromptSheet(false); setMNavActive("library"); }
 });
 $("mBuildBtn") && ($("mBuildBtn").onclick = () => buildPrompt());
+$("mShareBtn") && ($("mShareBtn").onclick = shareSelectionCode);
+$("mImportSelBtn") && ($("mImportSelBtn").onclick = importSelectionCode);
 $("mCopySelBtn") && ($("mCopySelBtn").onclick = () => copyText(Object.keys(state.selected).join("\\n")));
 $("mClearSelBtn") && ($("mClearSelBtn").onclick = () => {
   state.selected = {}; if($("output")) $("output").value=""; if($("mOutput")) $("mOutput").value="";
@@ -2535,6 +2982,9 @@ $("mEngineSelect") && ($("mEngineSelect").onchange = () => {
 // Esc closes prompt sheet too
 
 document.addEventListener("keydown", e => {
+  const tag = (e.target && e.target.tagName || "").toLowerCase();
+  const typing = tag === "input" || tag === "textarea" || (e.target && e.target.isContentEditable);
+
   if(e.key === "Escape"){
     openPromptSheet(false);
     openSidebar(false);
@@ -2555,6 +3005,30 @@ document.addEventListener("keydown", e => {
       pushRecentUsed(state.activeCmd);
       renderAll();
       toast("✓ به انتخاب‌ها اضافه شد");
+    }
+  }
+  // Phase2 shortcuts (when not typing in fields)
+  if(!typing && !e.ctrlKey && !e.metaKey && !e.altKey){
+    if(e.key === "/" ){
+      e.preventDefault();
+      $("search") && $("search").focus();
+    }
+    if(e.key === "f" || e.key === "F"){
+      if(state.activeCmd){
+        e.preventDefault();
+        toggleFav(state.activeCmd);
+        toast(isFav(state.activeCmd) ? "★ علاقه‌مندی" : "از علاقه‌مندی حذف شد");
+      }
+    }
+    if(e.key === "c" || e.key === "C"){
+      if(state.activeCmd){
+        e.preventDefault();
+        copyText(state.activeCmd);
+      }
+    }
+    if(e.key === "b" || e.key === "B"){
+      e.preventDefault();
+      if(typeof buildPrompt === "function") buildPrompt();
     }
   }
 });
@@ -2578,6 +3052,26 @@ $("engineSelect") && (() => {
     if(typeof updateLivePrompt === "function") updateLivePrompt();
   };
 })();
+
+
+// Phase2: compact mode toggle
+$("compactBtn") && ($("compactBtn").onclick = () => {
+  state.compactMode = !state.compactMode;
+  saveCompact();
+  applyCompactClass();
+  toast(state.compactMode ? "حالت فشرده فعال شد" : "حالت عادی");
+});
+if(typeof applyCompactClass === "function") applyCompactClass();
+// Phase3: variant noise toggle
+$("variantNoiseBtn") && ($("variantNoiseBtn").onclick = () => {
+  state.hideVariantNoise = !state.hideVariantNoise;
+  try { localStorage.setItem("pcs_v3_hide_variants", state.hideVariantNoise ? "1" : "0"); } catch(e){}
+  $("variantNoiseBtn").classList.toggle("primary", !!state.hideVariantNoise);
+  state.libraryLimit = 60;
+  renderLibrary();
+  toast(state.hideVariantNoise ? "نسخه‌های HD/PREM مخفی شدند" : "همه نسخه‌ها نمایش داده می‌شوند");
+});
+if($("variantNoiseBtn")) $("variantNoiseBtn").classList.toggle("primary", !!state.hideVariantNoise);
 
 try {
   renderAll();
