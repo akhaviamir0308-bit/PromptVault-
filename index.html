@@ -216,10 +216,26 @@ a{color:var(--accent);text-decoration:none}
 .en-tag{font-size:9px;color:var(--muted);font-weight:600;margin-right:6px;letter-spacing:.03em}
 .en-muted{font-size:11px;color:var(--muted)}
 .vis-preview{
-  height:120px;border-radius:12px;margin-bottom:14px;
+  height:140px;border-radius:12px;margin-bottom:14px;
   background:linear-gradient(135deg,rgba(124,140,255,.25),rgba(66,211,178,.12));
   border:1px solid var(--line);display:grid;place-items:center;
   font-size:42px;font-weight:700;color:var(--accent);opacity:.9;
+  position:relative;overflow:hidden;
+}
+.vis-preview .vp-label{position:absolute;bottom:8px;right:10px;font-size:10px;opacity:.7;font-weight:600;z-index:2}
+.vis-preview > img.insp-preview-img{
+  width:100%;height:100%;object-fit:contain;object-position:center;
+  display:none;position:absolute;inset:0;z-index:1;
+  background:var(--panel2);
+}
+.vis-preview.has-img{
+  background:var(--panel2);
+  color:transparent;
+  font-size:0;
+}
+.vis-preview.has-img > img.insp-preview-img{display:block}
+.vis-preview.has-img .vp-label{
+  background:rgba(0,0,0,.6);color:#fff;padding:3px 8px;border-radius:6px;opacity:1;
 }
 .style-card{
   background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
@@ -250,8 +266,6 @@ a{color:var(--accent);text-decoration:none}
 .style-preview.vintage{background:linear-gradient(135deg,#5c4033 0%,#c4a484 50%,#f5e6c8 100%)}
 .style-preview.futuristic{background:linear-gradient(135deg,#00f5ff 0%,#7b2cbf 50%,#0a0a0a 100%)}
 .style-preview.fine_art{background:linear-gradient(135deg,#2c1810 0%,#8b4513 40%,#daa520 100%)}
-.vis-preview{position:relative;overflow:hidden}
-.vis-preview .vp-label{position:absolute;bottom:8px;right:10px;font-size:10px;opacity:.7;font-weight:600}
 .insp-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .insp-meta-item{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .insp-meta-item .k{font-size:9px;color:var(--muted);font-weight:700;margin-bottom:3px}
@@ -373,13 +387,7 @@ input:focus:not(:focus-visible){outline:none}
   color:transparent;font-size:0;
 }
 .style-preview.has-img span{display:none}
-.vis-preview.has-img{
-  background-size:cover !important;background-position:center !important;
-  color:transparent;
-}
-.vis-preview.has-img .vp-label{
-  background:rgba(0,0,0,.55);color:#fff;padding:3px 8px;border-radius:6px;
-}
+
 body.light .scard.selected::after{background:rgba(79,95,255,.12)}
 
 .scard.selected{box-shadow:0 0 0 2px var(--accent)}
@@ -1852,7 +1860,8 @@ function renderInspector(){
 
   const prevUrl = cmdPreviewUrl(c.cmd);
   content.innerHTML = `
-    <div class="vis-preview style-preview ${escapeHtml(gradClass)}" style="height:140px" id="inspVisPreview">
+    <div class="vis-preview ${escapeHtml(gradClass)}" id="inspVisPreview">
+      <img class="insp-preview-img" alt="" decoding="async">
       <span class="vp-label">پیش‌نمایش · ${escapeHtml(catLabel)}</span>
     </div>
     <div class="insp-cmd">${escapeHtml(c.cmd)}</div>
@@ -1900,12 +1909,12 @@ function renderInspector(){
   if(prevUrl){
     const vp = content.querySelector("#inspVisPreview");
     if(vp){
-      const im = new Image();
-      im.onload = () => {
-        vp.classList.add("has-img");
-        vp.style.backgroundImage = "url('" + prevUrl.replace(/'/g, "%27") + "')";
-      };
-      im.src = prevUrl;
+      const img = vp.querySelector("img.insp-preview-img");
+      if(img){
+        img.onload = () => { vp.classList.add("has-img"); };
+        img.onerror = () => { /* keep gradient fallback */ };
+        img.src = prevUrl;
+      }
     }
   }
 
