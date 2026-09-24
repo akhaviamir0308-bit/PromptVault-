@@ -1760,9 +1760,8 @@ function stylePreviewUrl(id){
   return PREVIEW_DIR + "style-" + id + ".png";
 }
 function scardPreviewHtml(cmd){
-  const url = cmdPreviewUrl(cmd);
-  if(!url) return "";
-  return `<div class="scard-preview"><img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async" onerror="var p=this.parentNode;if(p){p.classList.add('no-img');}this.remove();"></div>`;
+  // Disabled: previews only shown in Inspector (details panel) for better performance
+  return "";
 }
 
 function deriveIntel(c){
