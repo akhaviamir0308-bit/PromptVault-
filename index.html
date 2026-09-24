@@ -595,6 +595,30 @@ body.light .scard.selected::after{background:rgba(79,95,255,.12)}
 .scard .meaning{min-height:2.8em}
 .lib-toolbar{padding-bottom:12px}
 
+
+/* Phase 1 improvements */
+.load-more-wrap{grid-column:1/-1;text-align:center;padding:18px 8px}
+.load-more-wrap .btn{min-width:220px}
+.sel-count.pulse{animation:selPulse .45s ease}
+@keyframes selPulse{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.12);color:var(--accent)}
+  100%{transform:scale(1)}
+}
+@media (max-width:860px){
+  .m-prompt-panel{
+    max-height:78vh !important;
+  }
+  .m-prompt-panel textarea#mOutput{
+    min-height:110px !important;
+    font-size:12px !important;
+  }
+  .m-prompt-panel .engine-row,
+  .m-prompt-panel .chip-row{
+    margin-bottom:8px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1307,6 +1331,7 @@ const RECENT_U_KEY = "pcs_v3_recent_used";
 
 let state = {
   category: "all",
+  multiCats: new Set(), // Phase1: multi-category filter (Shift+click)
   onlyFav: false,
   search: "",
   quick: "",
@@ -1319,6 +1344,7 @@ let state = {
   showRecipes: false,
   showWorkspace: false,
   showCurated: false,
+  libraryLimit: 60, // Phase1: progressive loading
   favorites: safeCmdArray(localStorage.getItem(FAV_KEY), 500),
   collections: (function(){
     const v = safeJsonParse(localStorage.getItem(COL_KEY), []);
@@ -1410,7 +1436,7 @@ function renderSidebar(){
         active = !!state.showCurated;
       } else {
         cnt = counts[item.cat] || 0;
-        active = state.category === item.cat && !state.onlyFav && !state.showStyles && !state.showRecipes && !state.showWorkspace;
+        active = (state.category === item.cat || (state.multiCats && state.multiCats.has(item.cat))) && !state.onlyFav && !state.showStyles && !state.showRecipes && !state.showWorkspace;
       }
       html += `<button class="side-item ${active?"active":""}" data-side="${escapeHtml(item.id)}" data-cat="${escapeHtml(item.cat||"")}">
         <span>${escapeHtml(item.title)}</span><span class="cnt">${Number(cnt).toLocaleString("fa-IR")}</span>
@@ -1420,13 +1446,37 @@ function renderSidebar(){
   }
   $("sidebar").innerHTML = html;
   $("sidebar").querySelectorAll("[data-side]").forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = (e) => {
       const id = btn.dataset.side;
+      const cat = btn.dataset.cat || "";
+      // Phase1: Shift+click on real categories toggles multi-filter
+      const isRealCat = cat && !["all","fav","styles","recipes","workspace","curated"].includes(id);
+      if(e.shiftKey && isRealCat){
+        if(state.multiCats.has(cat)) state.multiCats.delete(cat);
+        else state.multiCats.add(cat);
+        state.category = state.multiCats.size ? "multi" : "all";
+        state.onlyFav = false;
+        state.showStyles = false;
+        state.showRecipes = false;
+        state.showWorkspace = false;
+        state.showCurated = false;
+        state.styleFilter = null;
+        state.libraryLimit = 60;
+        state.quick = "";
+        document.querySelectorAll(".qchip").forEach(c => c.classList.remove("on"));
+        openSidebar(false);
+        renderAll();
+        toast(state.multiCats.size ? ("فیلتر ترکیبی: " + state.multiCats.size + " دسته") : "فیلتر ترکیبی پاک شد");
+        return;
+      }
+      // normal click: single category, clear multi
+      state.multiCats.clear();
       state.showStyles = false;
       state.showRecipes = false;
       state.showWorkspace = false;
       state.showCurated = false;
       state.styleFilter = null;
+      state.libraryLimit = 60;
       if(id === "fav"){
         state.category = "fav";
         state.onlyFav = true;
@@ -1472,6 +1522,8 @@ function filtered(){
         const kw = st.keywords.some(k => hay0.includes(k));
         if(!inCat && !kw) return false;
       }
+    } else if(state.multiCats && state.multiCats.size > 0){
+      if(!state.multiCats.has(c.category)) return false;
     } else if(state.category && state.category !== "all" && state.category !== "styles"){
       if(c.category !== state.category) return false;
     }
@@ -1689,7 +1741,9 @@ function renderLibrary(){
     </div>`;
     return;
   }
-  const show = items.slice(0, 120);
+  const limit = state.libraryLimit || 60;
+  const show = items.slice(0, limit);
+  const remaining = items.length - show.length;
   grid.innerHTML = show.map(c => {
     const sel = !!state.selected[c.cmd];
     const active = state.activeCmd === c.cmd;
@@ -1710,7 +1764,9 @@ function renderLibrary(){
         </div>
       </div>
     </article>`;
-  }).join("") + (items.length > 120 ? `<div class="empty" style="grid-column:1/-1"><p>${(items.length-120).toLocaleString("fa-IR")} مورد دیگر — جستجو را دقیق‌تر کنید.</p></div>` : "");
+  }).join("") + (remaining > 0 ? `<div class="load-more-wrap" style="grid-column:1/-1;text-align:center;padding:16px 8px">
+    <button class="btn primary" id="loadMoreBtn">نمایش ${Math.min(60, remaining).toLocaleString("fa-IR")} مورد بیشتر · باقی‌مانده: ${remaining.toLocaleString("fa-IR")}</button>
+  </div>` : "");
 
   grid.querySelectorAll(".scard").forEach(card => {
     card.onclick = e => {
@@ -1748,6 +1804,14 @@ function renderLibrary(){
   grid.querySelectorAll("[data-copy]").forEach(b => {
     b.onclick = e => { e.stopPropagation(); copyText(b.dataset.copy); };
   });
+  // Phase1: progressive load more
+  const loadBtn = $("loadMoreBtn");
+  if(loadBtn){
+    loadBtn.onclick = () => {
+      state.libraryLimit = (state.libraryLimit || 60) + 60;
+      renderLibrary();
+    };
+  }
 }
 
 const __CMD_MAP = (function(){ const m = Object.create(null); COMMANDS.forEach(c => { m[c.cmd] = c; m[c.cmd.toUpperCase()] = c; }); return m; })();
@@ -1974,7 +2038,14 @@ function renderSelection(){
   const keys = Object.keys(state.selected);
   saveSelected();
   const countFa = keys.length.toLocaleString("fa-IR");
-  if($("selCount")) $("selCount").textContent = `${countFa} انتخاب`;
+  if($("selCount")){
+    $("selCount").textContent = `${countFa} انتخاب`;
+    $("selCount").classList.remove("pulse");
+    void $("selCount").offsetWidth; // restart animation
+    $("selCount").classList.add("pulse");
+  }
+  // Phase1: live prompt preview
+  if(typeof updateLivePrompt === "function") updateLivePrompt();
   const hits = findConflicts(keys);
   const conflictText = hits.length
     ? ("هشدار تداخل: " + hits.map(([a,b]) => a + " با " + b).join(" · ") + " — معمولاً یکی را نگه دارید.")
@@ -2009,8 +2080,7 @@ function renderSelection(){
     if(keys.length){ badge.style.display = "grid"; badge.textContent = String(keys.length); }
     else { badge.style.display = "none"; }
   }
-  // sync mobile output from desktop if present
-  if($("mOutput") && $("output") && $("output").value) $("mOutput").value = $("output").value;
+  // live prompt already synced both textareas
 }
 
 function openPromptSheet(open){
@@ -2124,31 +2194,8 @@ function previewWorkspace(data){
   return { fav, cols, colItems, rv, ru, sel };
 }
 function buildPromptTextFromSelection(){
-  const keys = Object.keys(state.selected);
-  if(!keys.length) return "";
-  const order = ["POR","FASH","PROD","FOOD","ARCH","SCIFI","CAM","LIGHT","ATMOS","BG","COM","COLOR","MATERIAL","MOOD","STYLE","CINE","REAL","FANT","ILL","MOTION","TECH","SOCIAL"];
-  const rank = cat => { const i = order.indexOf(cat); return i < 0 ? 50 : i; };
-  const sorted = keys.slice().sort((a,b) => {
-    const ca = getCmd(a), cb = getCmd(b);
-    return rank(ca && ca.category) - rank(cb && cb.category) || a.localeCompare(b);
-  });
-  const seen = new Set();
-  const parts = [];
-  sorted.forEach(cmd => {
-    const c = getCmd(cmd);
-    let t = c ? (c.meaning || cmd.replace(/^\//,"").replace(/_/g," ").toLowerCase()) : cmd.replace(/^\//,"").replace(/_/g," ").toLowerCase();
-    t = String(t).trim().toLowerCase();
-    if(!t || seen.has(t)) return;
-    seen.add(t);
-    parts.push(t);
-  });
-  let out = parts.join(", ");
-  const eng = state.engine || "generic";
-  if(eng === "midjourney") out += " --v 6 --stylize 100";
-  else if(eng === "sdxl") out += ", highly detailed, sharp focus, best quality";
-  else if(eng === "flux") out += ", natural language descriptive scene, coherent lighting";
-  else out += ", coherent composition, professional image quality";
-  return out;
+  // Phase1: reuse unified composer
+  return typeof composePromptText === "function" ? composePromptText() : "";
 }
 function exportReadableSelection(){
   const keys = Object.keys(state.selected);
@@ -2253,14 +2300,9 @@ function renderAll(){
   renderSelection();
 }
 
-function buildPrompt(){
+function composePromptText(){
   const keys = Object.keys(state.selected);
-  if(!keys.length){
-    if($("output")) $("output").value = "";
-    if($("mOutput")) $("mOutput").value = "";
-    toast("ابتدا شورتکاتی انتخاب کنید", false);
-    return;
-  }
+  if(!keys.length) return "";
   const order = ["POR","FASH","PROD","FOOD","ARCH","SCIFI","CAM","LIGHT","ATMOS","BG","COM","COLOR","MATERIAL","MOOD","STYLE","CINE","REAL","FANT","ILL","MOTION","TECH","SOCIAL"];
   const rank = cat => { const i = order.indexOf(cat); return i < 0 ? 50 : i; };
   const sorted = keys.slice().sort((a,b) => {
@@ -2278,24 +2320,46 @@ function buildPrompt(){
     parts.push(t);
   });
   let out = parts.join(", ");
-  if(!out){ toast("ابتدا شورتکاتی انتخاب کنید", false); return; }
+  if(!out) return "";
   const eng = state.engine || "generic";
-  if(eng === "midjourney") out += " --v 6 --stylize 100";
-  else if(eng === "sdxl") out += ", highly detailed, sharp focus, best quality";
-  else if(eng === "flux") out += ", natural language descriptive scene, coherent lighting";
-  else out += ", coherent composition, professional image quality";
+  // Phase1: slightly richer but still simple engine templates
+  if(eng === "midjourney") out += " --v 6.1 --stylize 100 --style raw";
+  else if(eng === "sdxl") out += ", highly detailed, sharp focus, best quality, 8k";
+  else if(eng === "flux") out += ", natural language descriptive scene, coherent lighting, photorealistic detail";
+  else out += ", coherent composition, professional image quality, well-lit";
+  return out;
+}
+
+function updateLivePrompt(){
+  const out = composePromptText();
   if($("output")) $("output").value = out;
   if($("mOutput")) $("mOutput").value = out;
+}
+
+function buildPrompt(){
+  const keys = Object.keys(state.selected);
+  if(!keys.length){
+    if($("output")) $("output").value = "";
+    if($("mOutput")) $("mOutput").value = "";
+    toast("ابتدا شورتکاتی انتخاب کنید", false);
+    return;
+  }
+  updateLivePrompt();
   toast("✓ پرامپت ساخته شد");
 }
 
 /* Events */
+let __searchTimer = null;
 $("search").addEventListener("input", e => {
   state.search = e.target.value;
   state.quick = "";
   document.querySelectorAll(".qchip").forEach(c => c.classList.remove("on"));
-  renderLibrary();
-  renderSidebar();
+  state.libraryLimit = 60; // reset progressive limit on new search
+  clearTimeout(__searchTimer);
+  __searchTimer = setTimeout(() => {
+    renderLibrary();
+    renderSidebar();
+  }, 160);
 });
 document.querySelectorAll(".qchip").forEach(chip => {
   chip.onclick = () => {
@@ -2303,6 +2367,7 @@ document.querySelectorAll(".qchip").forEach(chip => {
     document.querySelectorAll(".qchip").forEach(c => { if(c!==chip) c.classList.remove("on"); });
     state.quick = on ? chip.dataset.q : "";
     state.search = "";
+    state.libraryLimit = 60;
     $("search").value = on ? chip.dataset.q : "";
     renderLibrary();
   };
@@ -2464,6 +2529,7 @@ $("mEngineSelect") && ($("mEngineSelect").onchange = () => {
   state.engine = $("mEngineSelect").value;
   saveEngine();
   if($("engineSelect")) $("engineSelect").value = state.engine;
+  if(typeof updateLivePrompt === "function") updateLivePrompt();
 });
 
 // Esc closes prompt sheet too
@@ -2508,6 +2574,8 @@ $("engineSelect") && (() => {
   $("engineSelect").onchange = () => {
     state.engine = $("engineSelect").value;
     saveEngine();
+    if($("mEngineSelect")) $("mEngineSelect").value = state.engine;
+    if(typeof updateLivePrompt === "function") updateLivePrompt();
   };
 })();
 
